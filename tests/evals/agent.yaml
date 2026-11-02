@@ -1,0 +1,28 @@
+_ > nanoagent.cli.plugin.PluginOpenRouterAgentConfig:
+# run.py sets plugin and arguments per run, after `--`.
+plugin: ../..
+task: find-top-item
+arguments: inputs/42.json
+inputs: []
+timeout: 120.0
+
+# RUSH Lab's model and settings (NanoAgent's deploy/railway/nanoagent.yaml).
+llm > nanoagent.llm.openrouter.OpenRouterConfig:
+  model: deepseek/deepseek-v4-flash-0731
+  max_tokens: 2048
+  temperature: 0.0
+  max_attempts: 3
+  read_timeout: 120.0
+  input_price: 0.065
+  output_price: 0.18
+
+# RUSH Lab's agent limits, from the same file.
+harness > nanoagent.harness.nanoagent.NanoAgentConfig:
+  max_steps: 6
+  cost_limit: 0.10
+  token_limit: 65536
+  context_window: null
+  hooks: []
+  skills: null
+  context_files: []
+  events: null

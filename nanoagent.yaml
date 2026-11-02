@@ -1,0 +1,35 @@
+_ > nanoagent.plugin.v0001.ManifestConfig:
+id: receipt-top-item
+name: Receipt Top Item
+version: 0.1.0
+status: ready
+spec: nanoagent.plugin/v0001
+
+runtime > nanoagent.plugin.v0001.RuntimeConfig:
+  type: mcp_stdio
+  command: [uv, run, --frozen, python, -m, plugin]
+
+permissions > nanoagent.plugin.v0001.PermissionsConfig:
+  network > nanoagent.plugin.v0001.NetworkConfig:
+    hosts: []
+  filesystem > nanoagent.plugin.v0001.FilesystemConfig:
+    write: [workspace]
+
+# One entry per contract.Tool; its input and output classes are contract.TOOLS's.
+tools > dict[contract.Tool, nanoagent.plugin.v0001.ToolConfig]:
+  scan_receipt:
+    description: Scan a seeded receipt into OCR words with bounding boxes, save them as receipt.json, and state the question
+  answer_key:
+    description: Compute the item with the highest line total on a seeded receipt; the task's pinned reference
+
+# One entry per contract.Task; its input class is contract.TASKS's.
+tasks > dict[contract.Task, nanoagent.plugin.v0001.TaskConfig]:
+  find-top-item:
+    description: Find the item with the highest line total on a receipt given as OCR words with bounding boxes
+    runner: agent
+    tools: [scan_receipt]
+    reference: answer_key
+    instructions: |-
+      Call scan_receipt once with the task input exactly as given. It returns the question and the receipt as OCR output: every word with its bounding box [x0, y0, x1, y1] in pixels, in no particular order. In the boxes, y grows downward.
+      Words on the same printed line have nearly the same y (within a few pixels), and reading a line means ordering its words by x. Each item line reads: the item's name (one to three words), the quantity, "x", the unit price, and the line total at the right.
+      Submit the full name of the item with the highest line total, as printed on the receipt.

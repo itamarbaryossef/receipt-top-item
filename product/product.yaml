@@ -1,0 +1,11 @@
+_ > nanoagent.plugin.v0001.ProductConfig:
+tagline: "Receipt Understanding from OCR"
+summary: "Receipt Top Item scans a receipt generated from a seed into OCR output: every word with its bounding box, shuffled, as a document-understanding pipeline would give a text-only model. The agent must rebuild the receipt's lines from the boxes and name the item with the highest line total. A hidden answer key, computed from the same seed, decides every verdict."
+highlights:
+  - "Rebuilding a page's layout from word boxes, the core of document visual question answering"
+  - "Every receipt is reproducible from its seed, and every answer is unambiguous by construction"
+  - "Built-in traps: the most expensive unit price is never the answer, nor the first or last line"
+steps:
+  - "Ask the chat for a receipt by seed, for example \"find the top item on receipt 42\""
+  - "The agent scans the receipt, rebuilds its lines and submits the item's name"
+  - "The verifier compares the answer with the pinned answer key and shows its verdict"

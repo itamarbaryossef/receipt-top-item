@@ -1,0 +1,13 @@
+[project]
+name = "receipt-top-item-evals"
+version = "0.1.0"
+description = "Runs the find-top-item task with DeepSeek V4 Flash, as RUSH Lab does"
+requires-python = ">=3.12"
+dependencies = ["nanoagent"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+# NanoAgent's production branch at the time of these evals (version 0.7.0).
+nanoagent = { git = "https://github.com/RUSH-LAB/nanoagent", rev = "57714f62880eee11319765854e398af61e67b7b7", subdirectory = "nanoagent" }
