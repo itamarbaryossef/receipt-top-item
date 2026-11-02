@@ -25,7 +25,9 @@ STORE_WORDS = (
     ("Green", "Corner", "Daily", "Fresh", "Sunny", "Harbor", "Maple", "Union"),
     ("Grocer", "Market", "Pantry", "Foods", "Mart", "Basket"),
 )
-ITEMS = (4, 8)  # fewest and most item lines
+# Fewest and most item lines. Kept small, with little jitter below, so DeepSeek V4 Flash's reasoning
+# fits well inside RUSH Lab's 2048-token output limit (larger receipts exhausted it).
+ITEMS = (3, 5)
 QUANTITIES = (1, 5)
 CENTS = (49, 1999)  # cheapest and dearest unit price, in cents
 TAX_RATE = Decimal("0.0825")
@@ -35,8 +37,8 @@ SCAN_FILE = "receipt.json"
 WIDTH, LEFT, RIGHT, TOP = 400, 20, 380, 20
 QUANTITY_X = 200  # where the "2 x 3.49" column starts; every name ends before it
 CHAR, HEIGHT, ROW = 8, 14, 24
-# How far OCR moves each word off its line, in pixels: never enough to reach a neighbouring line.
-JITTER_X, JITTER_Y = 1, 3
+# How far OCR moves each word up or down off its line, in pixels: never enough to reach a neighbouring line.
+JITTER_Y = 1
 
 
 @dataclass(frozen=True)
@@ -50,8 +52,6 @@ class Line:
 @dataclass(frozen=True)
 class Receipt:
     store: str
-    date: str
-    time: str
     lines: list[Line]
     subtotal: Decimal
     tax: Decimal
@@ -65,8 +65,6 @@ def make_receipt(given: ReceiptInput) -> tuple[Receipt, random.Random]:
         raise ValueError(f"seed must be from 0 to {SEEDS - 1}, not {given.seed}")
     rng = random.Random(given.seed)
     store = " ".join(rng.choice(words) for words in STORE_WORDS)
-    date = f"2026-{rng.randint(1, 12):02d}-{rng.randint(1, 28):02d}"
-    time = f"{rng.randint(8, 21):02d}:{rng.randint(0, 59):02d}"
     for _ in range(ATTEMPTS):
         names = rng.sample(NAMES, rng.randint(*ITEMS))
         lines = []
@@ -78,7 +76,7 @@ def make_receipt(given: ReceiptInput) -> tuple[Receipt, random.Random]:
         if item is not None:
             subtotal = sum((line.line_total for line in lines), Decimal("0.00"))
             tax = (subtotal * TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            return Receipt(store, date, time, lines, subtotal, tax, subtotal + tax, item), rng
+            return Receipt(store, lines, subtotal, tax, subtotal + tax, item), rng
     raise RuntimeError(f"no unambiguous receipt for seed {given.seed} in {ATTEMPTS} attempts")
 
 
@@ -111,7 +109,7 @@ def _rows(receipt: Receipt) -> list[list[tuple[str, int]]]:
     def right(text):
         return (text, RIGHT - len(text) * CHAR)
 
-    rows = [words(receipt.store, LEFT), [(receipt.date, LEFT), right(receipt.time)], []]
+    rows = [words(receipt.store, LEFT), []]
     for line in receipt.lines:
         price = [
             (str(line.quantity), QUANTITY_X),
@@ -124,8 +122,6 @@ def _rows(receipt: Receipt) -> list[list[tuple[str, int]]]:
         [("SUBTOTAL", LEFT), right(_money(receipt.subtotal))],
         [("TAX", LEFT), (f"{TAX_RATE * 100:.2f}%", LEFT + 4 * CHAR), right(_money(receipt.tax))],
         [("TOTAL", LEFT), right(_money(receipt.total))],
-        [],
-        words("THANK YOU", LEFT),
     ]
     return rows
 
@@ -137,8 +133,8 @@ def scan(receipt: Receipt, rng: random.Random) -> tuple[int, list[Token]]:
     for index, row in enumerate(rows):
         y = TOP + index * ROW
         for text, x in row:
-            x0, y0 = x + rng.randint(-JITTER_X, JITTER_X), y + rng.randint(-JITTER_Y, JITTER_Y)
-            tokens.append(Token(text=text, box=[x0, y0, x0 + len(text) * CHAR, y0 + HEIGHT]))
+            y0 = y + rng.randint(-JITTER_Y, JITTER_Y)
+            tokens.append(Token(text=text, box=[x, y0, x + len(text) * CHAR, y0 + HEIGHT]))
     rng.shuffle(tokens)
     return TOP + len(rows) * ROW + TOP, tokens
 

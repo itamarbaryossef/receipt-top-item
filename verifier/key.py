@@ -5,7 +5,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from .checks import result, verify_seed
 
-ITEMS = (4, 8)  # fewest and most item lines
+ITEMS = (3, 5)  # fewest and most item lines
 QUANTITIES = (1, 5)
 CENTS = (49, 1999)  # cheapest and dearest unit price, in cents
 TAX_RATE = Decimal("0.0825")

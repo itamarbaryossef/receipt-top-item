@@ -79,7 +79,7 @@ def test_refuses_a_key_that_does_not_follow_from_its_receipt(tmp_path: Path) -> 
         {**key, "item": other},  # the wrong answer
         {**key, "items": [line, *key["items"][1:]]},  # a line total that is not quantity × unit price
         {**key, "tax": "0.00"},  # totals that do not add up
-        {**key, "items": key["items"][:3]},  # too few items
+        {**key, "items": key["items"][:2]},  # too few items
     ]:
         built = build_output(broken, AnswerKeyOutput)
         assert verifier.verify_output("answer_key", _given(11), built, str(tmp_path))["valid"] is False

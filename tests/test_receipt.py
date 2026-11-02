@@ -72,8 +72,9 @@ def test_the_lines_rebuilt_from_the_boxes_read_the_receipt(tmp_path: Path) -> No
         lines = _lines(scan_receipt(given, tmp_path).tokens)
         items = [f"{item.name} {item.quantity} x {item.unit_price} {item.line_total}" for item in key.items]
         assert lines[0] == key.store
-        assert lines[2 : 2 + len(items)] == items
-        assert lines[-4:] == [f"SUBTOTAL {key.subtotal}", f"TAX 8.25% {key.tax}", f"TOTAL {key.total}", "THANK YOU"]
+        assert lines[1 : 1 + len(items)] == items
+        assert lines[-3:] == [f"SUBTOTAL {key.subtotal}", f"TAX 8.25% {key.tax}", f"TOTAL {key.total}"]
+        assert len(lines) == len(items) + 4
 
 
 def test_every_receipt_has_one_answer_and_keeps_its_traps(tmp_path: Path) -> None:

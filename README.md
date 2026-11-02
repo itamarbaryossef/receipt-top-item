@@ -7,11 +7,13 @@ words in shuffled order, and asks which item has the highest line total. The age
 receipt's lines from the boxes alone. A reference tool, `answer_key`, computes the answer from the
 same seed before the agent starts, out of its sight, and the verifier compares the two with no model.
 
-A receipt has a store name, a date and time, 4 to 8 item lines and a subtotal, 8.25% tax and total.
+A receipt has a store name, 3 to 5 item lines and a subtotal, 8.25% tax and total.
 An item line reads `Oat Milk  2 x 3.49  6.98`: a name of one to three words, the quantity, the unit
 price and the line total, right-aligned. Item names share words ("Oat Milk", "Whole Milk", "Milk
-Chocolate Bar"), so a name must be rebuilt from its words. Each word's box is moved up to 3 pixels
-off its line, as OCR does, but lines are 24 pixels apart, so words never reach a neighbouring line.
+Chocolate Bar"), so a name must be rebuilt from its words. Each word's box is moved up or down by
+up to a pixel, as OCR does, but lines are 24 pixels apart, so words never reach a neighbouring line.
+Receipts are kept this small so that DeepSeek V4 Flash's reasoning fits inside RUSH Lab's 2048-token
+output limit: on larger, noisier receipts it sometimes spent the whole limit reasoning and never answered.
 
 The generator rejects any receipt whose answer is ambiguous or easy to guess: the highest line total
 is unique, the item with the highest unit price is a different item (so ranking by the wrong column,
