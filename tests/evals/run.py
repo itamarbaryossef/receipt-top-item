@@ -23,13 +23,17 @@ RUNS = HERE / "runs"
 if not os.environ.get("OPENROUTER_API_KEY"):
     sys.exit("set OPENROUTER_API_KEY first")
 
-# On a macOS folder synced by iCloud, the plugin's editable-install .pth file can be flagged hidden,
-# and Python 3.13+ skips hidden .pth files, so the plugin does not import. A .pth written anew is visible.
-for pth in PLUGIN.glob(".venv/lib/python3.*/site-packages/__editable__*.pth"):
-    if getattr(pth.stat(), "st_flags", 0) & getattr(stat, "UF_HIDDEN", 0):
-        content = pth.read_bytes()
-        pth.unlink()
-        pth.write_bytes(content)
+
+def show_pth():
+    """On a macOS folder synced by iCloud, the plugin's editable-install .pth file can be flagged hidden at
+    any time, and Python 3.13+ skips hidden .pth files, so the plugin does not import. A .pth written anew
+    is visible for a while, so this runs before every run."""
+    for pth in PLUGIN.glob(".venv/lib/python3.*/site-packages/__editable__*.pth"):
+        if getattr(pth.stat(), "st_flags", 0) & getattr(stat, "UF_HIDDEN", 0):
+            content = pth.read_bytes()
+            pth.unlink()
+            pth.write_bytes(content)
+
 
 RUNS.mkdir(exist_ok=True)
 inputs = sorted((HERE / "inputs").glob("*.json"), key=lambda path: int(path.stem))
@@ -41,6 +45,7 @@ for input_file in inputs:
     print(f"run  {input_file.stem}: {input_file.read_text().strip()}", flush=True)
     command = ["nanoagent", "plugin", "agent", f"config={HERE / 'agent.yaml'}", f"home={home}", "--"]
     command += [f"plugin={PLUGIN}", f"arguments={input_file}"]
+    show_pth()
     with (RUNS / f"{input_file.stem}.out").open("w") as out:
         # The run exits 1 when the verdict is invalid; that is a result, not a failure of this script.
         code = subprocess.run(command, check=False, cwd=HERE, stdout=out, stderr=subprocess.STDOUT).returncode
@@ -52,7 +57,11 @@ for input_file in inputs:
     if (run / "run.log").is_file():
         logs.append(f"##### seed {input_file.stem}\n{(run / 'run.log').read_text().rstrip()}\n")
     if not (run / "verdict.json").is_file():
-        rows.append(f"| {input_file.stem} | (no verdict: see runs/{input_file.stem}.out) | | | |")
+        # An agent that never submits gets no verdict: it failed the task. Anything else stopped the run itself.
+        out = RUNS / f"{input_file.stem}.out"
+        failed = out.is_file() and "without calling submit" in out.read_text()
+        why = "the agent never submitted an answer" if failed else "the run failed"
+        rows.append(f"| {input_file.stem} | (none) | | no verdict | {why}: see runs/{input_file.stem}.out |")
         continue
     verdict = json.loads((run / "verdict.json").read_text())
     verdicts[input_file.stem] = verdict
